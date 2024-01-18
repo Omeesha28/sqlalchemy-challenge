@@ -23,6 +23,7 @@ Sort the DataFrame values by "date".
 Plot the results by using the DataFrame plot method.
 
 A screenshot depicts the plot.
+![output](bar_graph.png)
 
 Use Pandas to print the summary statistics for the precipitation data.
 
@@ -40,6 +41,7 @@ Query the previous 12 months of TOBS data for that station.
 Plot the results as a histogram with bins=12, as the following image shows:
 
 A screenshot depicts the histogram.
+![output](histogram.png)
 
 ### Part 2: Design Your Climate App
 Design a Flask API based on the queries that you just developed.
