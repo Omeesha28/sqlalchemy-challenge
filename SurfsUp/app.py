@@ -1,6 +1,7 @@
 # Import the dependencies.
 import numpy as np
 import sqlalchemy
+import datetime as dt
 from sqlalchemy.ext.automap import automap_base
 from sqlalchemy.orm import Session
 from sqlalchemy import create_engine, func
@@ -19,7 +20,7 @@ Base = automap_base()
 Base.prepare(autoload_with=engine)
 
 # Save references to each table
-Measurment = Base.classes.measurement
+Measurement = Base.classes.measurement
 Station = Base.classes.station
 
 # Create our session (link) from Python to the DB
@@ -53,7 +54,7 @@ def precipitation():
 
     """Return a list of all the precipitation data"""
     # Query all precipitation
-    results = session.query(Measurment.date, Measurment.prcp).filter(Measurment.date >= "2016-08-23").filter(Measurment.date <= "2017-08-23").all()
+    results = session.query(Measurement.date, Measurement.prcp).filter(Measurement.date >= "2016-08-23").filter(Measurement.date <= "2017-08-23").all()
 
     session.close()
 
@@ -73,7 +74,7 @@ def stations():
 
     """Return a list of all the stations data"""
     # Query all precipitation
-    results = session.query(Measurment.station, func.count(Measurment.station)).group_by(Measurment.station).order_by(func.count(Measurment.station).desc()).all()
+    results = session.query(Measurement.station, func.count(Measurement.station)).group_by(Measurement.station).order_by(func.count(Measurement.station).desc()).all()
 
     #Convert the results from list to dictionaries
     station_data = list(np.ravel(results))
@@ -92,16 +93,15 @@ def tobs():
     """Return a list of all the stations data"""
     # Query all Tobs
     most_active_station_number = 'USC00519281'
-    results = session.query(Measurment.date, Measurment.tobs).\
-                        filter(Measurment.date >= "2016-08-24").\
-                        filter(Measurment.date <= "2017-08-23").\
-                        filter(Measurment.station == most_active_station_number).all()
+    results = session.query(Measurement.date, Measurement.tobs).\
+                        filter(Measurement.date >= "2016-08-24").\
+                        filter(Measurement.date <= "2017-08-23").\
+                        filter(Measurement.station == most_active_station_number).all()
 
     #Convert the results from list to dictionaries
     all_the_tobs = []
-    for prcp, date,tobs in results:
+    for date,tobs in results:
         tobs_dict = {}
-        tobs_dict["prcp"] = prcp
         tobs_dict["date"] = date
         tobs_dict["tobs"] = tobs
         all_the_tobs.append(tobs_dict)
@@ -111,15 +111,14 @@ def tobs():
     #Return results in Jsonify 
     return jsonify(all_the_tobs)
 
-@app.route("/api/v1.0/<start>")
+@app.route("/api/v1.0/<start_date>")
 def start_date(start_date):
     # Create our session (link) from Python to the DB
     session = Session(engine)
 
     """Return a list of all the stations data"""
     # Query all Tobs
-    results = session.query(Measurment.date).order_by(Measurment.date.desc()).first()
-
+    results = session.query(func.min(Measurement.tobs), func.avg(Measurement.tobs), func.max(Measurement.tobs)).filter(Measurement.date >= start_date).all()
     #Convert the results from list to dictionaries
     start_date = []
     for min, avg, max in results:
@@ -134,15 +133,17 @@ def start_date(start_date):
     #Return results in Jsonify 
     return jsonify(start_date)
 
-@app.route("/api/v1.0/<start>/<end>")
+@app.route("/api/v1.0/<start_date>/<end_date>")
 def start_and_end_date(start_date, end_date):
     # Create our session (link) from Python to the DB
     session = Session(engine)
 
     """Return a list of all the stations data"""
     # Query all Tobs
-    results = session.query(func.min(Measurment.tobs), func.avg(Measurment.tobs), func.max(Measurment.tobs)).filter(Measurment.date >= start_date).filter(Measurment.date <= end_date).all()
+    results = session.query(func.min(Measurement.tobs), func.avg(Measurement.tobs), func.max(Measurement.tobs)).filter(Measurement.date >= start_date).filter(Measurement.date <= end_date).all()
     
+    session.close()
+
     #Convert the results from list to dictionaries
     start_and_end_date = []
     for min, avg, max in results:
@@ -152,8 +153,6 @@ def start_and_end_date(start_date, end_date):
         start_and_end_date_dict["max_temp"] = max
         start_and_end_date.append( start_and_end_date_dict)  
     
-    session.close()
-
     #Return results in Jsonify 
     return jsonify( start_and_end_date)
 
